@@ -4,6 +4,7 @@ open Microsoft.Extensions.Hosting
 open System.Runtime.InteropServices;
 open Microsoft.AspNetCore.Http
 open System.Text
+open System.Drawing
 
 [<StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)>]
 type InputArgs = 
@@ -36,18 +37,18 @@ let main args =
         Func<HttpRequest, IResult>(
         fun (request) -> 
             try
-                let lightcolor = request.Query.["lightcolor"] |> string
-                let backcolor = request.Query.["backcolor"] |> string
+                let _lightcolor = request.Query.["lightcolor"] |> string
+                let _backcolor = request.Query.["backcolor"] |> string
                 let _sizex = request.Query.["sizex"] |> string
                 let _sizey = request.Query.["sizey"] |> string
                 let _cratesize = request.Query.["cratesize"] |> string 
                 let _start = request.Query.["start"] |> string 
                 let _verticescount = request.Query.["verticescount"] |> string           
-                let filename = request.RouteValues.["filename"] |> string
+                let _filename = request.RouteValues.["filename"] |> string
 
-                if filename = "" then
+                if _filename = "" then
                     Results.BadRequest("Error: Filename is missing")
-                elif lightcolor = "" || backcolor = "" || _sizex = "" || _sizey = "" || _cratesize = "" || _start = "" || _verticescount = "" then
+                elif _lightcolor = "" || _backcolor = "" || _sizex = "" || _sizey = "" || _cratesize = "" || _start = "" || _verticescount = "" then
                     Results.BadRequest("Error: One or more query arguments are missing")
                 else
                     let sizex = Int32.Parse _sizex
@@ -57,13 +58,16 @@ let main args =
                     let verticescount = Int32.Parse _verticescount
                     let vertexCnt = (sizex * sizey) / (cratesize * cratesize)
 
-                    if (sizex < 64 || sizey < 64 || 
-                        cratesize < 4 || cratesize > sizex ||
+                    if (sizex < 64 || sizey < 64 || cratesize < 4 || cratesize > sizex || 
                         cratesize > sizey || start < 0 || start > sizex * sizey ||
                         verticescount < 1 || verticescount > vertexCnt) then
                             Results.BadRequest("Error: One or more query arguments are out of range")
+                    elif (System.Drawing.Color.FromName(_lightcolor) = System.Drawing.Color.Empty) then
+                        Results.BadRequest("Error: lightcolor is not a valid color")
+                    elif (System.Drawing.Color.FromName(_backcolor) = System.Drawing.Color.Empty) then
+                        Results.BadRequest("Error: backcolor is not a valid color")
                     else
-                        let inputArgs = InputArgs(start, verticescount, lightcolor, backcolor)
+                        let inputArgs = InputArgs(start, verticescount, _lightcolor, _backcolor)
                         let pointer = Marshal.AllocHGlobal(350 + 100 * vertexCnt * sizeof<byte>)
                         let mutable length = 0
                         let status = Lichtenberg.createLichtenberg(sizex, sizey, cratesize, inputArgs, pointer, &length)
@@ -71,7 +75,7 @@ let main args =
                         if status = 0 then
                             let xml = Marshal.PtrToStringAnsi(pointer)
                             Marshal.FreeHGlobal(pointer)
-                            Results.File(Encoding.UTF8.GetBytes(xml), "text/xml", $"{filename}.xml", true)  
+                            Results.File(Encoding.UTF8.GetBytes(xml), "image/svg+xml", $"{_filename}.svg", true)  
                         else
                             Marshal.FreeHGlobal(pointer)
                             Results.BadRequest($"Error: generating Lichtenberg figure ended with status: {status}")

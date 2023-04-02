@@ -335,7 +335,7 @@ const int saveXML(
 		{
 			if (width[k] > 0)
 			{
-				n = sprintf(buffer, "<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" style=\"stroke-width:%d\"/>\n", points[i].x, points[i].y, points[edges[k]].x, points[edges[k]].y, (int)(sqrtf(width[k])));
+				n = sprintf(buffer, "<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" style=\"stroke-width:%.1f\"/>\n", points[i].x, points[i].y, points[edges[k]].x, points[edges[k]].y, (sqrtf(width[k])));
 				memcpy(result + offset, buffer, n);
 				offset += n;
 			}
