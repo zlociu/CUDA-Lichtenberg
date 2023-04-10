@@ -3,7 +3,7 @@
 <img src="./lichtenberg.svg" width="100%"/>
 
 ## Overview 👁️
-Remake of my student project for Database Lab course. Goal was to create some simple database with one or two tables, and fill these tables with some interesting data. My idea was to create Lichtenberg figures and store them in database, along with some informations about image size and colors. But in this version, I do not contains database features part.
+Remake of my student project for Database Lab course. Goal was to create some simple database with one or two tables, and fill these tables with some interesting data. My idea was to create Lichtenberg figures and store them in database, along with some informations about image size and colors. But in this version, I do not contain database features part.
 
 ### Lichtenberg figures
 [__Lichtenberg figures__](http://www.capturedlightning.com/frames/lichtenbergs.html) are branching, tree-like patterns, created by the passage of high voltage electrical discharges along the surface, or inside, electrically insulating materials (dielectrics). Discovered by Georg Christoph Lichtenberg in 18th century.  
@@ -14,6 +14,17 @@ And of course, what is most interesting for mathematicians and computer scientis
 This project constains two parts: 
 ### Lichtenberg figures library
 Using __Nvidia CUDA__ and its library: __nvGraph__. Generating algorithm is based on [SSSP](https://developer.nvidia.com/discover/shortest-path-problem) (Single-Source Shortest Path) problem, which is solved using nvGraph library. Lightnings are stored as SVG format string and returned to user. This format was used to compress images and reduce their sizes. Because of specific image properties, this method is very effective. And of course, vector graphics is scalable, which is a very useful feature. 
+
+#### Creating graph
+Process of creating graph starts with creating vertices. The available space is divided into squares and each square will contain only one vertex, but some squares will remain without vertex (with small probability, but still). The __(x,y)__ coords are gerenating randomly using __cuRand__ library. Then edges are creating. It is important, that we need planar graph (or to be more precise, planar representation of graph). So we connect (if possible) vertex with the one above, under, from the left and right. Then crossing, but we need to know if we can create edge between _TL_ (top left), _TR_, _BL_ and _BR_ (bottom riht). Image below demonstrate this situation. 
+
+<img src="./planar_graph.svg" width="50%"/>
+
+We can use some function which as an argument use __x__ or __y__ coord value to determine if we can connect two vertices. From the left side we use _x-1_ (_y-1_) value, from the right side _x_ (_y_) value. This simple way allows to generate proper graph. After these steps, we use SSSP algorithm and draw result image. 
+
+#### Drawing result image
+Firstly we choose init vertex. Then we get a subset of available vertices and find which edges are required to 
+connect two vertices. The more times each edge is required, the bolder line will be drawn in result.  
 
 ### Lichtenberg API 
 Is a simple web api which allows end-user to generate and store sample images. Written in F# using ASP.NET framework.
