@@ -16,11 +16,11 @@ This project constains two parts:
 Using __Nvidia CUDA__ and its library: __nvGraph__. Generating algorithm is based on [SSSP](https://developer.nvidia.com/discover/shortest-path-problem) (Single-Source Shortest Path) problem, which is solved using nvGraph library. Lightnings are stored as SVG format string and returned to user. This format was used to compress images and reduce their sizes. Because of specific image properties, this method is very effective. And of course, vector graphics is scalable, which is a very useful feature. 
 
 #### Creating graph
-Process of creating graph starts with creating vertices. The available space is divided into squares and each square will contain only one vertex, but some squares will remain without vertex (with small probability, but still). The __(x,y)__ coords are gerenating randomly using __cuRand__ library. Then edges are creating. It is important, that we need planar graph (or to be more precise, planar representation of graph). So we connect (if possible) vertex with the one above, under, from the left and right. Then crossing, but we need to know if we can create edge between _TL_ (top left), _TR_, _BL_ and _BR_ (bottom riht). Image below demonstrate this situation. 
+Process of creating graph starts with creating vertices. The available space is divided into squares and each square will contain only one vertex, but some squares will remain without vertex (with small probability, but still). The __(x,y)__ coords are gerenating randomly using __cuRand__ library. 
 
-<img src="./planar_graph.svg" width="50%"/>
+<img style="float:right" src="./planar_graph.svg" width="50%"/>
 
-We can use some function which as an argument use __x__ or __y__ coord value to determine if we can connect two vertices. From the left side we use _x-1_ (_y-1_) value, from the right side _x_ (_y_) value. This simple way allows to generate proper graph. After these steps, we use SSSP algorithm and draw result image. 
+Then edges are creating. It is important, that we need planar graph (or to be more precise, planar representation of graph). So we connect (if possible) vertex with the one above, under, from the left and right. Then crossing, but we need to know if we can create edge between _TL_ (top left), _TR_, _BL_ and _BR_ (bottom riht). Image on the right demonstrate this situation. We can use some function which as an argument use __x__ or __y__ coord value to determine if we can connect two vertices. From the left side we use _x-1_ (_y-1_) value, from the right side _x_ (_y_) value. This simple way allows to generate proper graph. After these steps, we use SSSP algorithm and draw result image. 
 
 #### Drawing result image
 Firstly we choose init vertex. Then we get a subset of available vertices and find which edges are required to 
