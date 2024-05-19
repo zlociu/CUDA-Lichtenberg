@@ -5,7 +5,7 @@ struct point_t
 {
 	int x;
 	int y;
-	__host__ point_t() {}
+	__host__ point_t() : x(0), y(0) {}
 	__device__ point_t(int _x, int _y) : x(_x), y(_y) {}
 
 	__host__ __device__ bool isNull() { return (this->x == -1 || this->y == -1); }

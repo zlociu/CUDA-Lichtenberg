@@ -39,7 +39,18 @@ __global__ void setup_kernel(curandState* state)
 }
 
 //tab - pixels table, p - propability
-__global__ void createVertices(point_t* crate_tab, const float p, curandState* cu, const int squareSize)
+/// <summary>
+/// 
+/// </summary>
+/// <param name="crate_tab">- pixels table</param>
+/// <param name="p">- propability</param>
+/// <param name="cu">- cuda rng states</param>
+/// <param name="squareSize">- size of single square block</param>
+__global__ void createVertices(
+	point_t* crate_tab,
+	const float p,
+	curandState* cu,
+	const int squareSize)
 {
 	int x = threadIdx.x + blockIdx.x * blockDim.x;
 	int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -76,7 +87,12 @@ __global__ void createVertices(point_t* crate_tab, const float p, curandState* c
 /// <param name="weights">- edge weight</param>
 /// <param name="seed">- seed to determine if '\' edge or '/'</param>
 /// <returns></returns>
-__global__ void createEdges(point_t* vertices, int* edges, int* offsets, float* weights, int seed)
+__global__ void createEdges(
+	point_t* vertices,
+	int* edges,
+	int* offsets,
+	float* weights,
+	int seed)
 {
 	int x = threadIdx.x + blockIdx.x * blockDim.x; //column
 	int y = threadIdx.y + blockIdx.y * blockDim.y; //row
@@ -240,7 +256,8 @@ int adjustVerticesEdges(
 	int edge_offset = 0;
 	int null_idx = 0;
 
-	int* shift_idx = (int*)malloc(crateSizeX * crateSizeY * sizeof(int)); //if point is before or after how many null points
+	//if point is before or after how many null points
+	int* shift_idx = (int*)malloc(crateSizeX * crateSizeY * sizeof(int)); 
 	for (int i = 0; i < crateSizeX * crateSizeY; i++)
 	{
 		shift_idx[i] = null_idx;
@@ -270,7 +287,15 @@ int adjustVerticesEdges(
 	return vert_offset;
 }
 
-void setWidth(int* offsets, int* edges, float* weights, int* width, float* sssh_1, int startPoint, int numVertices, int cntNum)
+void setWidth(
+	int* offsets,
+	int* edges,
+	float* weights,
+	int* width,
+	float* sssh_1,
+	int startPoint,
+	int numVertices, 
+	int cntNum)
 {
 	int num = (rand() % cntNum / 10) + cntNum; //number of ending vertices
 	int idx;
@@ -303,7 +328,7 @@ void setWidth(int* offsets, int* edges, float* weights, int* width, float* sssh_
 	}
 }
 
-const int saveXML(
+int saveXML(
 	unsigned char* result,
 	point_t* points,
 	int* offsets,
@@ -335,7 +360,14 @@ const int saveXML(
 		{
 			if (width[k] > 0)
 			{
-				n = sprintf(buffer, "<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" style=\"stroke-width:%.1f\"/>\n", points[i].x, points[i].y, points[edges[k]].x, points[edges[k]].y, (sqrtf(width[k])));
+				n = sprintf(
+					buffer,
+					"<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" style=\"stroke-width:%.1f\"/>\n",
+					points[i].x,
+					points[i].y,
+					points[edges[k]].x,
+					points[edges[k]].y,
+					sqrtf((float)width[k]));
 				memcpy(result + offset, buffer, n);
 				offset += n;
 			}
@@ -365,11 +397,14 @@ extern "C" __declspec (dllexport) int createLichtenberg(
 	int dimX,
 	int dimY,
 	int squareSize,
-	inputArgs_t inputArgs,
-	unsigned char* result,
+	int startPos,
+	int verticesCount,
+	char* lightningColor,
+	char* backgroundColor,
+	unsigned char* xmlResult,
 	int* len)
 {
-	if (dimX % 32 != 0 || dimY % 32 != 0)
+	if (dimX % squareSize != 0 || dimY % squareSize != 0)
 	{
 		return LICHTENBERG_STATUS_DIM_SQUARE_SIZE;
 	}
@@ -382,28 +417,19 @@ extern "C" __declspec (dllexport) int createLichtenberg(
 	DataBlock   data;
 
 	// -------------------< graph >---------------------- 
-	point_t* vertices; 
-	vertices = (point_t*)malloc(crateSizeX * crateSizeY * sizeof(point_t));
-	point_t* vertices2; 
-	vertices2 = (point_t*)malloc(crateSizeX * crateSizeY * sizeof(point_t));
+	point_t* vertices = (point_t*)malloc(crateSizeX * crateSizeY * sizeof(point_t));
+	point_t* vertices2 = (point_t*)malloc(crateSizeX * crateSizeY * sizeof(point_t));
 
-	int* offsets;
-	offsets = (int*)malloc(crateSizeX * crateSizeY * sizeof(int));
-	int* offsets2;
-	offsets2 = (int*)malloc(crateSizeX * crateSizeY * sizeof(int));
+	int* offsets = (int*)malloc(crateSizeX * crateSizeY * sizeof(int));
+	int* offsets2 = (int*)malloc(crateSizeX * crateSizeY * sizeof(int));
 
-	int* edges; 
-	edges = (int*)malloc(crateSizeX * crateSizeY * 8 * sizeof(int));
-	int* edges2; 
-	edges2 = (int*)malloc(crateSizeX * crateSizeY * 8 * sizeof(int));
+	int* edges = (int*)malloc(crateSizeX * crateSizeY * 8 * sizeof(int));
+	int* edges2 = (int*)malloc(crateSizeX * crateSizeY * 8 * sizeof(int));
 
-	float* weights; 
-	weights = (float*)malloc(crateSizeX * crateSizeY * 8 * sizeof(float));
-	float* weights2; 
-	weights2 = (float*)malloc(crateSizeX * crateSizeY * 8 * sizeof(float));
+	float* weights = (float*)malloc(crateSizeX * crateSizeY * 8 * sizeof(float));
+	float* weights2 = (float*)malloc(crateSizeX * crateSizeY * 8 * sizeof(float));
 
-	int* width;
-	width = (int*)calloc(crateSizeX * crateSizeY * 8, sizeof(int)); //grubosc krawedzi
+	int* width = (int*)calloc(crateSizeX * crateSizeY * 8, sizeof(int)); //grubosc krawedzi
 
 	int number_vertices = 0;
 	int number_edges = 0;
@@ -447,24 +473,31 @@ extern "C" __declspec (dllexport) int createLichtenberg(
 	free(edges); free(offsets);
 
 	// -------------------< nvGraph >---------------------- 
-	const size_t  n_vertex = number_vertices, n_edge = number_edges, vertex_numsets = 1, edge_numsets = 1;
+	const size_t
+		n_vertex = number_vertices,
+		n_edge = number_edges,
+		vertex_numsets = 1,
+		edge_numsets = 1;
+
 	float* sssp_1_h; //sssp results
-	void** vertex_dim; //1
+	void** vertex_dim;
+
 	// nvgraph variables
 	nvgraphHandle_t handle;
 	nvgraphGraphDescr_t graph;
 	nvgraphCSCTopology32I_t CSC_input;
 	cudaDataType_t edge_dimT = CUDA_R_32F;
 	cudaDataType_t* vertex_dimT;
+
 	// Init host data
 	sssp_1_h = (float*)malloc(n_vertex * sizeof(float));
 	vertex_dim = (void**)malloc(vertex_numsets * sizeof(void*));
 	vertex_dimT = (cudaDataType_t*)malloc(vertex_numsets * sizeof(cudaDataType_t));
 	CSC_input = (nvgraphCSCTopology32I_t)malloc(sizeof(struct nvgraphCSCTopology32I_st));
 	vertex_dim[0] = (void*)sssp_1_h; vertex_dimT[0] = CUDA_R_32F;
-	float* weights_h; //weights
-	int* destination_offsets_h; //offset 
-	int* source_indices_h; //(edges are directed, need to do: 2->1 i 1->2)
+	float* weights_h; // weights
+	int* destination_offsets_h; // offset 
+	int* source_indices_h; // (edges are directed, need to do: 2->1 i 1->2)
 
 	weights_h = (float*)malloc(n_edge * sizeof(float));
 	destination_offsets_h = (int*)malloc((n_vertex + 1) * sizeof(int));
@@ -477,33 +510,42 @@ extern "C" __declspec (dllexport) int createLichtenberg(
 
 	CHECK(nvgraphCreate(&handle));
 	CHECK(nvgraphCreateGraphDescr(handle, &graph));
-	CSC_input->nvertices = n_vertex; CSC_input->nedges = n_edge;
+	CSC_input->nvertices = n_vertex;
+	CSC_input->nedges = n_edge;
 	CSC_input->destination_offsets = destination_offsets_h;
 	CSC_input->source_indices = source_indices_h;
+
 	// Set graph connectivity and properties (tranfers)
 	CHECK(nvgraphSetGraphStructure(handle, graph, (void*)CSC_input, NVGRAPH_CSC_32));
 	CHECK(nvgraphAllocateVertexData(handle, graph, vertex_numsets, vertex_dimT));
 	CHECK(nvgraphAllocateEdgeData(handle, graph, edge_numsets, &edge_dimT));
 	CHECK(nvgraphSetEdgeData(handle, graph, (void*)weights_h, 0));
+
 	// Solve
-	int source_vert = inputArgs.startPos;
+	int source_vert = startPos;
 	if (source_vert > n_vertex) source_vert %= n_vertex;
 	CHECK(nvgraphSssp(handle, graph, 0, &source_vert, 0));
+
 	// Get and print result
 	CHECK(nvgraphGetVertexData(handle, graph, (void*)sssp_1_h, 0));
 
 	// -------------------< CPU >---------------------- 
-	setWidth(offsets2, edges2, weights2, width, sssp_1_h, source_vert, n_vertex, inputArgs.verticesCount);
-	*len = saveXML(result, vertices2, offsets2, edges2, width, n_vertex, dimX, dimY, inputArgs.lightningColor, inputArgs.backgroundColor);
+	setWidth(offsets2, edges2, weights2, width, sssp_1_h, source_vert, n_vertex, verticesCount);
+	*len = saveXML(xmlResult, vertices2, offsets2, edges2, width, n_vertex, dimX, dimY, lightningColor, backgroundColor);
 
 	// -------------------< clean >----------------------  
-	free(sssp_1_h); free(vertex_dim);
-	free(vertex_dimT); free(CSC_input);
+	free(sssp_1_h);
+	free(vertex_dim);
+	free(vertex_dimT);
+	free(CSC_input);
+
 	CHECK(nvgraphDestroyGraphDescr(handle, graph));
 	CHECK(nvgraphDestroy(handle));
 
-	free(offsets2); free(edges2);
-	free(weights2); free(width);
+	free(offsets2);
+	free(edges2);
+	free(weights2);
+	free(width);
 
 	return LICHTENBERG_STATUS_SUCCESS;
 }
